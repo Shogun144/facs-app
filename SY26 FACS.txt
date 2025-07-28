@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Plan: Introduction to FACS & Foundations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Calm Harmony (Off-white, Slate Gray, Sage Green, Warm Sand) -->
+    <!-- Application Structure Plan: A single-page, vertically scrolling application with a top navigation bar for quick access to key sections. The structure is thematic, not linear, using interactive cards, tabs for the weekly plan, and a clickable career explorer. This design breaks down the dense unit plan into digestible, engaging chunks, promoting exploration over passive reading, which is ideal for both teachers planning and students reviewing. -->
+    <!-- Visualization & Content Choices: Report Info: Weekly session breakdown -> Goal: Organize and simplify a dense schedule -> Viz/Presentation: Interactive tabbed interface for Weeks 1, 2, and 3. Interaction: Clicking a week tab reveals only that week's session cards. Justification: Prevents overwhelming the user with a long, scrolling list of all 10 sessions at once. Library/Method: Vanilla JS and Tailwind CSS. Report Info: Career Pathways -> Goal: Encourage exploration -> Viz/Presentation: Interactive "Career Profile" cards. Interaction: Clicking a card opens a modal with details. Justification: Creates an engaging, focused experience for career discovery. Library/Method: Vanilla JS and Tailwind CSS. Report Info: Life Skills Brainstorming -> Goal: Generate contextual life skill ideas -> Viz/Presentation: Input field and button with text output. Interaction: User inputs scenario, clicks button, LLM generates skills. Justification: Enhances brainstorming activity with AI assistance. Library/Method: Vanilla JS, Gemini API. Report Info: Goal Setting -> Goal: Refine goals into SMART format -> Viz/Presentation: Input field and button with text output. Interaction: User inputs goal, clicks button, LLM refines. Justification: Provides direct AI support for a key learning objective. Library/Method: Vanilla JS, Gemini API. Report Info: Career Details -> Goal: Expand knowledge on skills and trends -> Viz/Presentation: Buttons within modal with text output. Interaction: User clicks button, LLM generates related skills/trends. Justification: Deepens career exploration with dynamic information. Library/Method: Vanilla JS, Gemini API. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF6;
+            color: #2F4F4F;
+        }
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #6B8E23;
+            border-bottom-color: #6B8E23;
+        }
+        .tab-button {
+            transition: all 0.3s;
+        }
+        .tab-button.active {
+            background-color: #6B8E23;
+            color: #FFFFFF;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #FDFBF6;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            max-width: 90%;
+            width: 500px;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6B8E23;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">FACS Foundations</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Overview</a>
+                        <a href="#concepts" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Key Concepts</a>
+                        <a href="#plan" class="nav-link px-3 py-2 rounded-md text-sm font-medium">3-Week Plan</a>
+                        <a href="#assessments" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Assessments</a>
+                        <a href="#careers" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Careers</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="overview" class="text-center mb-16 md:mb-24">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Unit 1: Introduction to FACS & Foundations</h1>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600">
+                This foundational unit introduces the dynamic field of Family and Consumer Sciences. It connects the historical roots of "Home Economics" to modern, evidence-based applications, equipping you with essential skills for navigating personal, family, community, and career roles.
+            </p>
+        </section>
+
+        <section id="concepts" class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-2">Key Concepts & Skills</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">This unit is built on several core ideas. Click each concept below to explore the key skills and learning objectives you'll master.</p>
+            <div id="concepts-container" class="space-y-4 max-w-4xl mx-auto">
+            </div>
+        </section>
+
+        <section id="plan" class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-2">The 3-Week Journey</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">Follow the plan week by week to see how you'll build your skills. Each session is designed to be interactive and build upon the last, taking you from foundational ideas to practical application.</p>
+            <div class="max-w-5xl mx-auto">
+                <div class="mb-6 flex justify-center border-b border-gray-200">
+                    <button class="tab-button active text-lg font-medium px-6 py-3" data-tab="week1">Week 1</button>
+                    <button class="tab-button text-lg font-medium px-6 py-3" data-tab="week2">Week 2</button>
+                    <button class="tab-button text-lg font-medium px-6 py-3" data-tab="week3">Week 3</button>
+                </div>
+                <div id="plan-content">
+                </div>
+            </div>
+        </section>
+
+        <section id="assessments" class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-2">Show What You Know</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">These projects are your opportunity to apply what you've learned in a meaningful way, connecting FACS concepts to your own life and future aspirations.</p>
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-3 text-gray-800">Personal Goal Setting & Action Plan</h3>
+                    <p class="text-gray-600 mb-4">Create a personal short-term and long-term goal related to your well-being or career exploration. You'll outline specific, actionable steps to achieve it, identify potential obstacles, and reflect on how FACS concepts like decision-making and self-management will support your plan.</p>
+                    <p class="text-sm font-medium text-gray-500">Standards: 1.0, 1.1, 1.1.1, 1.1.2, 1.2</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-3 text-gray-800">My FACS Career Profile Project</h3>
+                    <p class="text-gray-600 mb-4">Research two distinct FACS career pathways that interest you. Create a profile for each that includes daily tasks, required education/skills, and a clear explanation of how the career connects to specific FACS themes (e.g., nutrition, finance, design).</p>
+                    <p class="text-sm font-medium text-gray-500">Standards: 1.0, 1.2, 1.2.3, 1.3, 1.3.3, 1.3.4</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="careers" class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-2">Explore FACS Careers</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">FACS opens doors to a wide variety of fulfilling careers that help people and communities thrive. Click on a card to learn more about a potential future path.</p>
+            <div id="careers-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
+            </div>
+        </section>
+        
+        <section id="differentiation" class="max-w-4xl mx-auto">
+            <div class="bg-white border border-gray-200 rounded-lg">
+                <button id="diff-toggle" class="w-full flex justify-between items-center p-4 text-left font-bold text-xl">
+                    <span>Differentiation Strategies</span>
+                    <span id="diff-icon" class="transform transition-transform duration-300">▼</span>
+                </button>
+                <div id="diff-content" class="hidden p-6 border-t border-gray-200">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 text-green-700">For Support</h4>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Provide sentence starters or graphic organizers for journals and goal setting.</li>
+                                <li>Offer a pre-selected list of 3-5 FACS career options for research.</li>
+                                <li>Pair students with stronger peers for group activities.</li>
+                                <li>Provide simplified vocabulary or visual aids for key concepts.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 text-blue-700">For Challenge</h4>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Encourage research into more complex or niche FACS career pathways.</li>
+                                <li>Challenge students to develop multi-layered goals with contingency plans.</li>
+                                <li>Present ethical dilemmas within decision-making scenarios for deeper analysis.</li>
+                                <li>Have students lead small group discussions or present their strategies.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="career-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" class="text-3xl font-bold mb-4"></h3>
+            <p id="modal-description" class="text-gray-600 mb-4"></p>
+            <h4 class="font-bold text-lg mb-2">Key Skills & Education</h4>
+            <p id="modal-skills" class="text-gray-600 mb-4"></p>
+            <h4 class="font-bold text-lg mb-2">Connection to FACS</h4>
+            <p id="modal-connection" class="text-gray-600 mb-6"></p>
+            <div class="flex flex-col space-y-3 mb-6">
+                <button id="gemini-skills-btn" class="w-full bg-green-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-800 transition-colors flex items-center justify-center">
+                    Suggest Related Skills ✨ <span id="gemini-skills-spinner" class="loading-spinner hidden"></span>
+                </button>
+                <div id="gemini-skills-output" class="text-gray-700 bg-gray-100 p-3 rounded-md hidden"></div>
+                <button id="gemini-trends-btn" class="w-full bg-green-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-800 transition-colors flex items-center justify-center">
+                    Future Trends ✨ <span id="gemini-trends-spinner" class="loading-spinner hidden"></span>
+                </button>
+                <div id="gemini-trends-output" class="text-gray-700 bg-gray-100 p-3 rounded-md hidden"></div>
+            </div>
+            <button id="close-modal" class="w-full bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors">Close</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const conceptsData = [
+                { title: 'Defining FACS', content: 'Understand the history of Family & Consumer Sciences and explain its relevance to your daily life and future.' },
+                { title: 'Identifying Life Skills', content: 'Identify and categorize the essential skills that are crucial for success and well-being as a young person.' },
+                { title: 'Goal Setting', content: 'Differentiate between short-term and long-term goals and set personal goals using the SMART method.' },
+                { title: 'Decision Making', content: 'Apply a structured model to analyze and solve real-life scenarios, considering the impact of your choices.' },
+                { title: 'Personal Responsibility', content: 'Demonstrate basic self-management and personal responsibility through class activities and projects.' },
+                { title: 'Career Exploration', content: 'Research and describe various career pathways within FACS, connecting them to your personal interests.' },
+            ];
+
+            const planData = {
+                week1: [
+                    { session: '1-2', title: '"What Are Life Skills?" & Intro to FACS', description: 'Brainstorm essential life skills in groups and get introduced to the world of FACS, connecting its history to its modern importance. Homework: Journal entry on "Why FACS Matters to Me."' },
+                    { session: '3-5', title: 'Personal Goal Setting Workshop', description: 'Learn the SMART goals method and apply it by creating your own short-term and long-term goals. You will complete a worksheet to outline your plan for success.' }
+                ],
+                week2: [
+                    { session: '6-8', title: 'Decision-Making Scenarios', description: 'Learn and apply a 6-step decision-making model to real-world scenarios like choosing electives or managing free time. Work in groups to practice and discuss the importance of consequences and values.' }
+                ],
+                week3: [
+                    { session: '9-10', title: 'Career Exploration & Unit Wrap-up', description: 'Hear from a guest speaker, take a career interest inventory to connect your passions to FACS fields, and get introduced to the final unit assessments.' }
+                ]
+            };
+            
+            const careersData = [
+                { name: 'Nutritionist / Dietitian', description: 'Helps individuals and groups make healthy food choices to prevent disease and improve well-being.', skills: 'Strong science background (biology, chemistry), communication skills, empathy. Bachelor\'s or Master\'s degree in dietetics.', connection: 'Directly applies principles from the Nutrition, Wellness, and Food Science unit to improve community health.' },
+                { name: 'Financial Planner', description: 'Assists people with managing their money, including budgeting, saving, investing, and planning for retirement.', skills: 'Math and analytical skills, trustworthiness, communication. Bachelor\'s degree in finance or a related field.', connection: 'Builds on the Consumer Savvy & Resource Management unit to help families achieve financial security.' },
+                { name: 'Childcare Director', description: 'Manages the daily operations of a daycare or preschool, ensuring a safe and educational environment for children.', skills: 'Leadership, understanding of child development, organizational skills. Degree in Early Childhood Education.', connection: 'Uses skills from the Human Development unit to create nurturing environments for children to thrive.' },
+                { name: 'Fashion Designer', description: 'Designs clothing and accessories, from initial concept to final product, considering aesthetics, function, and market trends.', skills: 'Creativity, drawing skills, knowledge of textiles and sewing. Degree in fashion design.', connection: 'Applies concepts from the Textiles, Apparel & Design unit, from understanding fabrics to construction.' },
+                { name: 'Interior Designer', description: 'Plans and designs functional and beautiful interior spaces for homes, offices, and other buildings.', skills: 'Creativity, spatial awareness, project management. Degree in interior design.', connection: 'Uses the elements and principles of design to improve living and working environments.' },
+                { name: 'Hospitality Manager', description: 'Oversees operations in hotels, restaurants, or resorts, ensuring excellent customer service and smooth functioning.', skills: 'Leadership, customer service, problem-solving. Degree in hospitality management.', connection: 'Puts skills from the Hospitality & Food Service unit into practice to create positive experiences for guests.' }
+            ];
+
+            const conceptsContainer = document.getElementById('concepts-container');
+            conceptsData.forEach((concept, index) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'bg-white border border-gray-200 rounded-lg';
+                accordionItem.innerHTML = `
+                    <button class="accordion-toggle w-full flex justify-between items-center p-4 text-left font-bold text-lg">
+                        <span>${concept.title}</span>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content hidden p-6 border-t border-gray-200 text-gray-600">
+                        ${concept.content}
+                        ${(index === 0) ? `
+                            <div class="mt-4 p-4 bg-gray-50 rounded-md">
+                                <h5 class="font-semibold mb-2">Life Skills Brainstormer ✨</h5>
+                                <input type="text" id="life-skill-scenario-input" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="e.g., 'moving to a new city'">
+                                <button id="generate-life-skills-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                                    Suggest Life Skills ✨ <span id="life-skills-spinner" class="loading-spinner hidden"></span>
+                                </button>
+                                <div id="life-skills-output" class="mt-3 text-gray-700 bg-blue-100 p-3 rounded-md hidden"></div>
+                            </div>
+                        ` : ''}
+                        ${(index === 2) ? `
+                            <div class="mt-4 p-4 bg-gray-50 rounded-md">
+                                <h5 class="font-semibold mb-2">Goal Setting Assistant ✨</h5>
+                                <input type="text" id="goal-idea-input" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="e.g., 'get better at math'">
+                                <button id="make-smart-goal-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                                    Make it SMART! ✨ <span id="smart-goal-spinner" class="loading-spinner hidden"></span>
+                                </button>
+                                <div id="smart-goal-output" class="mt-3 text-gray-700 bg-blue-100 p-3 rounded-md hidden"></div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                conceptsContainer.appendChild(accordionItem);
+            });
+
+            conceptsContainer.addEventListener('click', (e) => {
+                const toggle = e.target.closest('.accordion-toggle');
+                if (toggle) {
+                    const content = toggle.nextElementSibling;
+                    const icon = toggle.querySelector('span:last-child');
+                    content.classList.toggle('hidden');
+                    icon.classList.toggle('rotate-180');
+                }
+            });
+
+            const planContent = document.getElementById('plan-content');
+            const tabButtons = document.querySelectorAll('.tab-button');
+
+            function renderPlan(week) {
+                planContent.innerHTML = '';
+                const weekData = planData[week];
+                const grid = document.createElement('div');
+                grid.className = 'grid md:grid-cols-2 gap-6';
+                weekData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card p-6';
+                    card.innerHTML = `
+                        <p class="text-sm font-bold text-green-700 mb-1">Session ${item.session}</p>
+                        <h4 class="text-xl font-bold mb-2">${item.title}</h4>
+                        <p class="text-gray-600">${item.description}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+                planContent.appendChild(grid);
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    renderPlan(button.dataset.tab);
+                });
+            });
+            
+            renderPlan('week1');
+
+            const careersContainer = document.getElementById('careers-container');
+            careersData.forEach(career => {
+                const card = document.createElement('div');
+                card.className = 'card p-4 text-center cursor-pointer';
+                card.innerHTML = `<h4 class="font-bold text-lg">${career.name}</h4>`;
+                card.addEventListener('click', () => openModal(career));
+                careersContainer.appendChild(card);
+            });
+
+            const modal = document.getElementById('career-modal');
+            const closeModalBtn = document.getElementById('close-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalSkills = document.getElementById('modal-skills');
+            const modalConnection = document.getElementById('modal-connection');
+            const geminiSkillsBtn = document.getElementById('gemini-skills-btn');
+            const geminiSkillsOutput = document.getElementById('gemini-skills-output');
+            const geminiSkillsSpinner = document.getElementById('gemini-skills-spinner');
+            const geminiTrendsBtn = document.getElementById('gemini-trends-btn');
+            const geminiTrendsOutput = document.getElementById('gemini-trends-output');
+            const geminiTrendsSpinner = document.getElementById('gemini-trends-spinner');
+
+            let currentCareerName = '';
+
+            function openModal(career) {
+                modalTitle.textContent = career.name;
+                modalDescription.textContent = career.description;
+                modalSkills.textContent = career.skills;
+                modalConnection.textContent = career.connection;
+                currentCareerName = career.name; // Store current career for LLM calls
+
+                // Reset LLM outputs
+                geminiSkillsOutput.innerHTML = '';
+                geminiSkillsOutput.classList.add('hidden');
+                geminiTrendsOutput.innerHTML = '';
+                geminiTrendsOutput.classList.add('hidden');
+
+                modal.classList.add('visible');
+            }
+
+            function closeModal() {
+                modal.classList.remove('visible');
+            }
+
+            closeModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            const diffToggle = document.getElementById('diff-toggle');
+            const diffContent = document.getElementById('diff-content');
+            const diffIcon = document.getElementById('diff-icon');
+            
+            diffToggle.addEventListener('click', () => {
+                diffContent.classList.toggle('hidden');
+                diffIcon.classList.toggle('rotate-180');
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // LLM Integration
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            async function callGemini(prompt, outputElement, spinnerElement) {
+                spinnerElement.classList.remove('hidden');
+                outputElement.classList.add('hidden');
+                outputElement.innerHTML = '';
+
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    const payload = { contents: chatHistory };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        outputElement.innerHTML = text.replace(/\n/g, '<br>'); // Preserve newlines
+                        outputElement.classList.remove('hidden');
+                    } else {
+                        outputElement.textContent = 'Error: Could not get a response from the AI. Please try again.';
+                        outputElement.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    outputElement.textContent = 'Error: Failed to connect to AI. Please check your network and try again.';
+                    outputElement.classList.remove('hidden');
+                } finally {
+                    spinnerElement.classList.add('hidden');
+                }
+            }
+
+            // Life Skills Brainstormer
+            const generateLifeSkillsBtn = document.getElementById('generate-life-skills-btn');
+            if (generateLifeSkillsBtn) {
+                generateLifeSkillsBtn.addEventListener('click', () => {
+                    const scenarioInput = document.getElementById('life-skill-scenario-input');
+                    const scenario = scenarioInput.value.trim();
+                    if (scenario) {
+                        const prompt = `Given the scenario: "${scenario}", what are 5-7 essential life skills a young person would need to navigate this situation effectively? List them concisely.`;
+                        callGemini(prompt, document.getElementById('life-skills-output'), document.getElementById('life-skills-spinner'));
+                    } else {
+                        document.getElementById('life-skills-output').textContent = 'Please enter a scenario.';
+                        document.getElementById('life-skills-output').classList.remove('hidden');
+                    }
+                });
+            }
+
+            // Goal Setting Assistant
+            const makeSmartGoalBtn = document.getElementById('make-smart-goal-btn');
+            if (makeSmartGoalBtn) {
+                makeSmartGoalBtn.addEventListener('click', () => {
+                    const goalIdeaInput = document.getElementById('goal-idea-input');
+                    const goalIdea = goalIdeaInput.value.trim();
+                    if (goalIdea) {
+                        const prompt = `Take this general goal: '${goalIdea}'. Rephrase it as a SMART goal (Specific, Measurable, Achievable, Relevant, Time-bound) and suggest 3 actionable steps to achieve it. Format as: SMART Goal: [goal]. Steps: 1. [step], 2. [step], 3. [step].`;
+                        callGemini(prompt, document.getElementById('smart-goal-output'), document.getElementById('smart-goal-spinner'));
+                    } else {
+                        document.getElementById('smart-goal-output').textContent = 'Please enter a goal idea.';
+                        document.getElementById('smart-goal-output').classList.remove('hidden');
+                    }
+                });
+            }
+
+            // Career Pathway Expander - Related Skills
+            geminiSkillsBtn.addEventListener('click', () => {
+                if (currentCareerName) {
+                    const prompt = `What are 3-5 additional key skills (beyond basic education) that are highly valuable for a ${currentCareerName}?`;
+                    callGemini(prompt, geminiSkillsOutput, geminiSkillsSpinner);
+                }
+            });
+
+            // Career Pathway Expander - Future Trends
+            geminiTrendsBtn.addEventListener('click', () => {
+                if (currentCareerName) {
+                    const prompt = `What are 2-3 emerging trends or future directions for the ${currentCareerName} profession?`;
+                    callGemini(prompt, geminiTrendsOutput, geminiTrendsSpinner);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
